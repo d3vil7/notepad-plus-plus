@@ -177,6 +177,60 @@ jobs:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: PowerEditor\bin64\Notepad++.exe
 
+  build_windows_cmake:
+
+    runs-on: windows-latest
+    needs: before_build
+    if: needs.before_build.outputs.result == ''
+    strategy:
+      matrix:
+        include:
+          - build_configuration: Release
+            build_platform: x64
+            arch: amd64
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Modify resource.h N++ version to avoid confusion
+      working-directory: PowerEditor\src\
+      run: |
+           $content = Get-Content -Path 'resource.h'
+           $newContent = $content -replace 'TEXT\(\"Notepad\+\+ v.*\"\)', 'TEXT("Notepad++ GH_BUILD")'
+           $newContent | Set-Content -Path 'resource.h'
+
+    - name: Add nmake to PATH
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch }}
+
+    - name: build scintilla
+      working-directory: scintilla/win32/
+      run: |
+           nmake -f scintilla.mak
+
+    - name: build lexilla
+      working-directory: lexilla/src/
+      run: |
+           nmake -f lexilla.mak
+
+    - name: generate cmake
+      working-directory: PowerEditor/src
+      run: |
+           mkdir _build
+           cd _build
+           cmake -G "Visual Studio 17 2022" -A ${{ matrix.build_platform }} -T "v143" ..
+
+    - name: build cmake
+      working-directory: PowerEditor/src
+      run: |
+           cd _build
+           cmake --build . --config ${{ matrix.build_configuration }}
+
   # build_windows_clang:
 
     # runs-on: windows-latest
