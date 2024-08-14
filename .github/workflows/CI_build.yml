@@ -175,7 +175,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
-          path: PowerEditor\bin64\Notepad++.exe
+          path: build/release
 
   # build_windows_clang:
 
